@@ -1,0 +1,187 @@
+From 3c1b198a8b986de2f9b0a0876ef4a9e4f06fdf74 Mon Sep 17 00:00:00 2001
+From: kmag1220 <kelbymagsino1220@gmail.com>
+Date: Thu, 15 Feb 2024 13:21:25 -0600
+Subject: [PATCH 1/6] Added showGraph to IState
+
+---
+ src/App.tsx | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 0728518..ba80837 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -8,6 +8,7 @@ import './App.css';
+  */
+ interface IState {
+   data: ServerRespond[],
++  showGraph: boolean,
+ }
+ 
+ /**
+@@ -22,6 +23,7 @@ class App extends Component<{}, IState> {
+       // data saves the server responds.
+       // We use this state to parse data down to the child element (Graph) as element property
+       data: [],
++      showGraph: false,
+     };
+   }
+ 
+-- 
+2.39.2 (Apple Git-143)
+
+
+From 17b3913b248de8c9b415b5481825393d4e4e9420 Mon Sep 17 00:00:00 2001
+From: kmag1220 <kelbymagsino1220@gmail.com>
+Date: Thu, 15 Feb 2024 13:22:43 -0600
+Subject: [PATCH 2/6] Updated renderGraph
+
+---
+ src/App.tsx | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index ba80837..84eeb87 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -31,7 +31,9 @@ class App extends Component<{}, IState> {
+    * Render Graph react component with state.data parse as property data
+    */
+   renderGraph() {
+-    return (<Graph data={this.state.data}/>)
++    if (this.state.showGraph) {
++      return (<Graph data={this.state.data}/>)
++    }
+   }
+ 
+   /**
+-- 
+2.39.2 (Apple Git-143)
+
+
+From 5e7a3cddd15a169313c91de0bd3feccc1141c0bf Mon Sep 17 00:00:00 2001
+From: kmag1220 <kelbymagsino1220@gmail.com>
+Date: Thu, 15 Feb 2024 13:26:06 -0600
+Subject: [PATCH 3/6] Updated getDataFromServer
+
+---
+ src/App.tsx | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 84eeb87..b83f979 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -40,11 +40,19 @@ class App extends Component<{}, IState> {
+    * Get new data from server and update the state with the new data
+    */
+   getDataFromServer() {
+-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
+-      // Update the state by creating a new array of data that consists of
+-      // Previous data in the state and the new data from server
+-      this.setState({ data: [...this.state.data, ...serverResponds] });
+-    });
++    let x = 0;
++    const interval = setInterval(() => {
++      DataStreamer.getData((serverResponds: ServerRespond[]) => {
++        this.setState({
++          data: serverResponds,
++          showGraph: true,
++        });
++      });
++      x++;
++      if (x > 1000) {
++        clearInterval(interval);
++      }
++    }, 100);
+   }
+ 
+   /**
+-- 
+2.39.2 (Apple Git-143)
+
+
+From 2d11a4501f6a3f0140b634ca610c6dabc745fc3e Mon Sep 17 00:00:00 2001
+From: kmag1220 <kelbymagsino1220@gmail.com>
+Date: Thu, 15 Feb 2024 13:28:03 -0600
+Subject: [PATCH 4/6] Enabled PerspectiveViewerElement
+
+---
+ src/Graph.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index 3b2a7da..a382411 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -14,7 +14,7 @@ interface IProps {
+  * Perspective library adds load to HTMLElement prototype.
+  * This interface acts as a wrapper for Typescript compiler.
+  */
+-interface PerspectiveViewerElement {
++interface PerspectiveViewerElement extends HTMLElement {
+   load: (table: Table) => void,
+ }
+ 
+-- 
+2.39.2 (Apple Git-143)
+
+
+From 4619526555022a5ddd4c0b05247388230996a0ae Mon Sep 17 00:00:00 2001
+From: kmag1220 <kelbymagsino1220@gmail.com>
+Date: Thu, 15 Feb 2024 13:29:02 -0600
+Subject: [PATCH 5/6] Simplified componentDidMount
+
+---
+ src/Graph.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index a382411..757903a 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -32,7 +32,7 @@ class Graph extends Component<IProps, {}> {
+ 
+   componentDidMount() {
+     // Get element to attach the table from the DOM.
+-    const elem: PerspectiveViewerElement = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
++    const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+ 
+     const schema = {
+       stock: 'string',
+-- 
+2.39.2 (Apple Git-143)
+
+
+From 1f93636023fed2688c65d740c3fd2f496f47f0ba Mon Sep 17 00:00:00 2001
+From: kmag1220 <kelbymagsino1220@gmail.com>
+Date: Thu, 15 Feb 2024 14:13:30 -0600
+Subject: [PATCH 6/6] Implemented 5 attributes
+
+---
+ src/Graph.tsx | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index 757903a..8091bca 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -49,6 +49,15 @@ class Graph extends Component<IProps, {}> {
+ 
+       // Add more Perspective configurations here.
+       elem.load(this.table);
++      elem.setAttribute('view', 'y_line');
++      elem.setAttribute('column-pivots', '["stock"]');
++      elem.setAttribute('row-picots', '["timestamp"]');
++      elem.setAttribute('columns', '["top_ask_price"]');
++      elem.setAttribute('aggregates', `
++      {"stock" : "distinct count" ,
++      "top_ask_price" : "avg" ,
++      "top_big_price" : "avg" ,
++      "timestamp" : "distinc count"}`);
+     }
+   }
+ 
+-- 
+2.39.2 (Apple Git-143)
+
